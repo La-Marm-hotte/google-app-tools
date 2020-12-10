@@ -1,0 +1,18 @@
+{
+  "name": "google-app-tools",
+  "version": "1.0.0",
+  "description": "Set of scripts to automate tasks in google apps  ",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "eslint": "^4.17.0",
+    "eslint-config-google": "^0.9.1",
+    "eslint-plugin-async-await": "0.0.0"
+  },
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint **/*.gs --fix --quiet"
+  },
+  "eslintIgnore": [
+    "**/node_modules/**"
+  ]
+}
