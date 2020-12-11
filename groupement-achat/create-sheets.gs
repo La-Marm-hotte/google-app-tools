@@ -1,28 +1,82 @@
 
-// [START groupement_achat_create_spreadsheet]
-/**
- * Create a spreadsheet for all user in the specified group and sent it's link by email
- */
-function createSpreadSheetForEachUser() {
-  var contactGroup = ContactsApp.getContactGroup('LaMarmHotte');
-  var originalBDC = SpreadsheetApp.openById('1o0SZMKMcfdxjAd7dynMSzivKlTJwedxX4mlCzLEgbJ8');
 
-  Logger.log('Daily quota: %s', MailApp.getRemainingDailyQuota());
-  contactGroup.getContacts().forEach(function(c) {
-    var email = c.getEmails()[0].getAddress();
-    Logger.log('found user %s with email %s', c.getFullName(), email);
-      var userBDC = originalBDC.copy('Bon de commande '+c.getFullName());
-      userBDC.getRange('E2').setValue(c.getFamilyName());
-      userBDC.getRange('E3').setValue(c.getGivenName());
-      userBDC.getRange('E6').setValue(email);
-      var fileOfUser = DriveApp.getFileById(userBDC.getId());
-      fileOfUser.moveTo(DriveApp.getFolderById('1sOVYH81t5htAcKBizMNlUAxiVyqw247t'));
-      fileOfUser.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.EDIT);
-      Logger.log(fileOfUser.getUrl());
-    MailApp.sendEmail(email, 'Bon de commande la Marm\'Hotte', ''+
-                      'Bonjour, voici le lien vers le bon de commande: '+
-                     fileOfUser.getUrl());
-  Logger.log('Daily quota: %s', MailApp.getRemainingDailyQuota());
-  });
+function getEmail(contact){
+  return contact.getEmails()[0].getAddress();
 }
-// [END groupement_achat_create_spreadsheet]
+
+function copySpreadsheet(contact, spreadSheet, folderId, dryRun) {
+  
+  Logger.log("Creating spreadsheet for user %s",  contact.getFullName());
+  
+  if(dryRun){
+    Logger.log("DRY_RUN: would create spreadSheet")
+    return "fakeUrl"
+  }
+  
+  var userBDC = originalBDC.copy("Bon de commande "+contact.getFullName())
+  userBDC.getRange("E2").setValue(contact.getFamilyName())
+  userBDC.getRange("E3").setValue(contact.getGivenName())
+  userBDC.getRange("E6").setValue(getEmail(contact))
+  var fileOfUser = DriveApp.getFileById(userBDC.getId())
+  fileOfUser.moveTo(DriveApp.getFolderById(folderId))
+  fileOfUser.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.EDIT)
+  Logger.log(fileOfUser.getUrl())
+  
+  Logger.log("Created spreadsheet %s",  fileOfUser.getId());
+  return fileOfUser.getUrl()
+}
+
+function sendEmail(contact, url, dryRun) {
+ 
+  var email = getEmail(contact)
+  Logger.log("Sending email with url to %s", email)
+  
+  var message = ""
+  message += "Bonjour, \n"
+  message += "ci dessous vous trouverez le lien vers votre bon de commande personnel.\n"
+  message += "\n"
+  message += url+"\n"
+  message += "\n"
+  message += "Remplissez simplement le bon de commande avant la date limite et procedez au paiement.\n"
+  message += "\n"
+  message += "Merci!\n"
+  message += "\n"
+      
+  if(dryRun){
+    Logger.log("DRY_RUN: would send email: %s", message)
+  } else {
+    MailApp.sendEmail(email, 
+                      "Commande groupement d'achat la Marm'Hotte", 
+                      message
+                     )
+  }
+  
+}
+
+
+function run(){
+
+  var dryRunSpreasheet = true
+  var dryRunEmail = true
+  
+  var contactGroupName = "[TEMP] Groupement achat"
+  var originalSpreadsheetId = "enter spreadsheet id here"
+  var folderForSpreadsheetStorageId = "enter folder id here"
+  
+  
+  var originalSpreadsheet = SpreadsheetApp.openById(originalSpreadsheetId)
+  var contactGroup = ContactsApp.getContactGroup(contactGroupName)
+  
+  var allContacts = contactGroup.getContacts()
+  
+  Logger.log("Will send email for %s users, quota is: %s", allContacts.length, MailApp.getRemainingDailyQuota())
+  allContacts.forEach(function(c){
+    
+    
+    var url = copySpreadsheet(c, originalSpreadsheet, folderForSpreadsheetStorageId, dryRunSpreasheet)
+    sendEmail(c, url, dryRunEmail)
+    
+  })
+  
+  
+}
