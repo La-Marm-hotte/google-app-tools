@@ -7,15 +7,16 @@ function getEmail(contact){
 function copySpreadsheet(contact, spreadSheet, folderId, dryRun) {
   
   Logger.log("Creating spreadsheet for user %s",  contact.getFullName());
-  
   if(dryRun){
     Logger.log("DRY_RUN: would create spreadSheet")
     return "fakeUrl"
   }
   
-  var userBDC = originalBDC.copy("Bon de commande "+contact.getFullName())
+  var numeroAdherant = contact.getAddresses()[0].getLabel()
+  var userBDC = spreadSheet.copy("Bon de commande - "+numeroAdherant+" - "+contact.getFullName())
   userBDC.getRange("E2").setValue(contact.getFamilyName())
   userBDC.getRange("E3").setValue(contact.getGivenName())
+  userBDC.getRange("E4").setValue(numeroAdherant)
   userBDC.getRange("E6").setValue(getEmail(contact))
   var fileOfUser = DriveApp.getFileById(userBDC.getId())
   fileOfUser.moveTo(DriveApp.getFolderById(folderId))
@@ -37,11 +38,15 @@ function sendEmail(contact, url, dryRun) {
   message += "\n"
   message += url+"\n"
   message += "\n"
-  message += "Remplissez simplement le bon de commande avant la date limite et procedez au paiement.\n"
+  message += "Après avoir consulté le catalogue dans l'onglet correspondant pour repérer les produits, allez sur le bon de commande et modifiez la colonne \"Reference\" à l'aide de la petite flèche sur la droite.\n"
+  message += "Pour que la commande soit traitée, merci d'indiquer dans le bon de commande quelle est le moyen de paiement utilisé et d'effectuer le règlement avant la date butoir par carte bancaire (de préférence), virement bancaire ou chèque.\n"
   message += "\n"
-  message += "Merci!\n"
+  message += "L'équipe de La Marm'Hotte\n"
   message += "\n"
-      
+
+
+
+
   if(dryRun){
     Logger.log("DRY_RUN: would send email: %s", message)
   } else {
@@ -56,12 +61,12 @@ function sendEmail(contact, url, dryRun) {
 
 function run(){
 
-  var dryRunSpreasheet = true
-  var dryRunEmail = true
+  var dryRunSpreasheet = false
+  var dryRunEmail = false
   
-  var contactGroupName = "[TEMP] Groupement achat"
-  var originalSpreadsheetId = "enter spreadsheet id here"
-  var folderForSpreadsheetStorageId = "enter folder id here"
+  var contactGroupName = "Adhérents"
+  var originalSpreadsheetId = "<To be replaced>"
+  var folderForSpreadsheetStorageId = "<To be replaced>"
   
   
   var originalSpreadsheet = SpreadsheetApp.openById(originalSpreadsheetId)
